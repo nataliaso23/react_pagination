@@ -1,33 +1,48 @@
 import React, { useState } from 'react';
 import './App.css';
-import { Pagination } from '../src/components/Pagination/Pagination';
+import { getNumbers } from './utils';
+import { Pagination } from './components/Pagination';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-const items = Array.from({ length: 42 }, (_, i) => `Item ${i + 1}`);
+const items = getNumbers(1, 42).map(n => `Item ${n}`);
+const TOTAL_ITEMS = items.length;
+const DEFAULT_PER_PAGE = 5;
+const DEFAULT_CURRENT_PAGE = 1;
 
 export const App: React.FC = () => {
-  const [currentPage, setCurrentPage] = useState<number>(1);
-  const [perPage, setPerPage] = useState<number>(5);
+  const [currentPage, setCurrentPage] = useState(DEFAULT_CURRENT_PAGE);
+  const [perPage, setPerPage] = useState(DEFAULT_PER_PAGE);
 
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-  };
+  // Calculate the items to display for the current page
+  const startIndex = (currentPage - 1) * perPage;
+  const endIndex = startIndex + perPage;
+  const visibleItems = items.slice(startIndex, endIndex);
 
+  // Calculate the range of item numbers for info text
+  const firstItemNum = Math.min(startIndex + 1, TOTAL_ITEMS);
+  const lastItemNum = Math.min(endIndex, TOTAL_ITEMS);
+
+  // Handle page change
   const handlePerPageChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    setPerPage(Number(event.target.value));
-    setCurrentPage(1);
+    const newPerPage = Number(event.target.value);
+
+    setPerPage(newPerPage);
+    setCurrentPage(1); // Reset to first page when perPage changes
   };
 
-  const startIdx = (currentPage - 1) * perPage;
-  const currentItems = items.slice(startIdx, startIdx + perPage);
+  // Dinamic info text
+  const infoText =
+    TOTAL_ITEMS > 0
+      ? `Page ${currentPage} (items ${firstItemNum} - ${lastItemNum} of ${TOTAL_ITEMS})`
+      : 'No items to display';
 
   return (
     <div className="container">
       <h1>Items with Pagination</h1>
 
+      {/* Display dynamic info */}
       <p className="lead" data-cy="info">
-        Page {currentPage} (items {startIdx + 1} -{' '}
-        {Math.min(startIdx + perPage, items.length)} of {items.length})
+        {infoText}
       </p>
 
       <div className="form-group row">
@@ -45,26 +60,17 @@ export const App: React.FC = () => {
             <option value="20">20</option>
           </select>
         </div>
-
         <label htmlFor="perPageSelector" className="col-form-label col">
           items per page
         </label>
       </div>
-
       <Pagination
-        total={items.length}
+        total={TOTAL_ITEMS}
         perPage={perPage}
         currentPage={currentPage}
-        onPageChange={handlePageChange}
+        onPageChange={setCurrentPage}
+        items={visibleItems}
       />
-
-      <ul>
-        {currentItems.map((item, index) => (
-          <li data-cy="item" key={index}>
-            {item}
-          </li>
-        ))}
-      </ul>
     </div>
   );
 };
